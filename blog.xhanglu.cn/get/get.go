@@ -61,7 +61,7 @@ func Get(c *gin.Context) {
 		CheckErr(err)
 		msg := new(Message)
 		msg.Id = id
-		msg.InsertTime = time.Unix(int64(insert_time), 0).Format("2006-01-02 15:04:0")
+		msg.InsertTime = time.Unix(int64(insert_time), 0).Format("2006-01-02 15:04:05")
 		msg.Uname = uname
 		msg.Content = content
 		msg.Email = email
