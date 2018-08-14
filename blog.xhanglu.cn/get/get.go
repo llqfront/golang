@@ -1,12 +1,14 @@
 package get
 
 import (
-	. "blog.xhanglu.cn/tip"
 	"database/sql"
-	"github.com/gin-gonic/gin"
-	_ "github.com/go-sql-driver/mysql"
+	"net/http"
 	"strconv"
 	"time"
+
+	. "blog.xhanglu.cn/tip"
+	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type Message struct {
@@ -19,8 +21,8 @@ type Message struct {
 
 func Get(c *gin.Context) {
 	var (
-		status int
-		// desc string
+		// status int
+		// desc        string
 		id          int
 		insert_time int
 		uname       string
@@ -28,15 +30,8 @@ func Get(c *gin.Context) {
 		email       string
 	)
 	db, err := sql.Open("mysql", "root:123123@/TESTSQL?charset=utf8")
+	err = db.Ping() //sql.Open无法断定数据库是否正常连接，所以调用db.Ping()进行判定
 	defer db.Close()
-	// err = db.Ping()  //sql.Open无法断定数据库是否正常连接，所以调用db.Ping()进行判定
-	// if err != nil {
-	//     status = 300
-	//     desc = "数据库连接失败"
-	// }else{
-	//     status = 200
-	//     desc = "数据库连接成功"
-	// }
 	// rows, err := db.Query("SELECT * FROM book")
 	// page := c.DefaultQuery("page", "0")
 	// pageSize := c.Query("pageSize")
@@ -49,25 +44,37 @@ func Get(c *gin.Context) {
 	// fmt.Printf(c.Param("name"))
 	// rows, err := db.Query("SELECT * FROM book limit 10, 2")
 	// 方法三  order by ASC/DESC
-	rows, err := db.Query("select * from book where id > ? order by id limit ?", pageNo, pageSize)
+	// rows, err := db.Query("select * from book where id > ? order by id limit ?", pageNo, pageSize)
+	// count, err := db.Query("select found_rows()")
+
+	// var count int64
+
+	// fmt.Print(count)
+	//
+
 	// 方法二
 	// rows, err := db.Query("select * from book where id > ? limit ?", pageNo, pageSize)
 	// 方法二
-	// rows, err := db.Query("select * from book limit ?, ?", pageNo, pageSize)
+	rows, err := db.Query("select * from book limit ?, ?", pageNo, pageSize)
 
-	var msgSlice []*Message
+	var dataSlice []*Message
 	for rows.Next() {
 		err = rows.Scan(&id, &uname, &content, &email, &insert_time)
 		CheckErr(err)
-		msg := new(Message)
-		msg.Id = id
-		msg.InsertTime = time.Unix(int64(insert_time), 0).Format("2006-01-02 15:04:05")
-		msg.Uname = uname
-		msg.Content = content
-		msg.Email = email
+		data := new(Message)
+		data.Id = id
+		data.InsertTime = time.Unix(int64(insert_time), 0).Format("2006-01-02 15:04:05")
+		data.Uname = uname
+		data.Content = content
+		data.Email = email
 		//fmt.Fprintf(w, id)
-		msgSlice = append(msgSlice, msg)
+		dataSlice = append(dataSlice, data)
 	}
+	var count int
+	err = db.QueryRow("select count(*) from book").Scan(&count)
 	CheckErr(err)
-	c.JSON(200, gin.H{"status": status, "msg": msgSlice})
+	// "count": "1", 总数 ok
+	// "size": "20",  一页多少条 ok
+	// "page": "1",  当前页码 ok
+	c.JSON(200, gin.H{"status": http.StatusOK, "result": dataSlice, "msg": "操作成功", "count": count, "page": page, "size": pageSize})
 }
